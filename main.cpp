@@ -12,6 +12,10 @@
 using namespace std;
 
 int nNets;
+int totatcells =0;
+int lockedcells =0;
+int areafailcells=0;
+
 float ratio_factor=0.6;   //area ratio fixed initially
 map<string,Cell> cellData;  // an object of the cell class is created for each cell
 map<int,vector<string> > netNodeMap;
@@ -37,16 +41,16 @@ int computeCutSize();// calculates cut size
 void createGainBucket(); // gain  bucket
 void updateGainBucket(); // update in each pass
 
-// main  program
+//main  program
 int main()
 {
 	make_heap(sheap.begin(),sheap.end());
 	readCellArea("ibm03\\ibm03.are");
 	createPartition();
-	// cout<<totalArea<<endl;
-	// cout<<computePartitionArea(0)<<endl;
-	// cout<<computePartitionArea(1)<<endl;
-	// cout<<computePartitionArea(0)+computePartitionArea(1)<<endl;
+	cout<<totalArea<<endl;
+	cout<<computePartitionArea(0)<<endl;
+	cout<<computePartitionArea(1)<<endl;
+	cout<<computePartitionArea(0)+computePartitionArea(1)<<endl;
 	readhgrFile("ibm03\\ibm03.hgr");
 	createGainBucket();
 	initcutSz=computeCutSize();
@@ -100,6 +104,7 @@ void readCellArea(string file){
 void createPartition()
 {
 	int size=cellData.size();
+	totatcells=size;
 	totalArea=computeTotalArea();
 	long areaCal=0;
 	long areaA=(ratio_factor) * (totalArea);
@@ -390,14 +395,20 @@ void moveCells()
 					{
 						cellData[node].togglePartition();
 						(it1->second).erase((it1->second).begin()+i);
-						// cout<<"reverting partition as area constraints are not met"<<endl;
+						areafailcells++;
+
+						if (totatcells - lockedcells ==areafailcells)
+							{break;}
+						else{// cout<<"reverting partition as area constraints are not met"<<endl;
 						continue;
+					       }
 					}
 					else
 					{
 						//locking the node
 						cellData[node].setLockStatus(true);
 						cellId=node;
+						lockedcells++;
 						// cout<<"cell is now locked"<<endl;
 						int cs=computeCutSize();
 						if(cs<mincutSz)
@@ -418,6 +429,7 @@ void moveCells()
 			if(flag==true)
 			{
 				updateGainBucket(cellId);
+				areafailcells=0;
 				it1=gainBucket.rbegin();
 			  	continue;
 			}
